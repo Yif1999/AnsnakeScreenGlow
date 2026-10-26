@@ -1,0 +1,25 @@
+name: Windows build
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile
+        shell: pwsh
+        run: ./scripts/Build.ps1 -Tests
+      - name: CPU unit tests
+        shell: pwsh
+        run: |
+          ./build/release/CornerLayoutTests.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Layout tests failed' }
+          ./build/release/LedColorTests.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Color tests failed' }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AnsnakeScreenGlow-win-x64
+          path: |
+            build/release/ScreenGlow.exe
+            build/release/Calibrate.exe
