@@ -17,9 +17,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Layout tests failed' }
           ./build/release/LedColorTests.exe
           if ($LASTEXITCODE -ne 0) { throw 'Color tests failed' }
+          ./build/release/CalibrationTests.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Calibration and settings tests failed' }
       - uses: actions/upload-artifact@v4
         with:
           name: AnsnakeScreenGlow-win-x64
           path: |
             build/release/ScreenGlow.exe
             build/release/Calibrate.exe
+

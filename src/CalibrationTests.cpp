@@ -27,8 +27,23 @@ int main(){
  DWORD beforeGdi=GetGuiResources(GetCurrentProcess(),GR_GDIOBJECTS),beforeUser=GetGuiResources(GetCurrentProcess(),GR_USEROBJECTS);
  for(int cycle=0;cycle<100;cycle++){h=createVisual();SendMessage(h,WM_COMMAND,414,0);SendMessage(h,WM_COMMAND,414,0);SendMessage(visualSample,CB_SETCURSEL,3,0);visualUpdate();assert((visualBytes==std::array<BYTE,3>{0,0,0}));DestroyWindow(h);assert(!visualPreview&&IsWindowEnabled(parent));}
  DWORD afterGdi=GetGuiResources(GetCurrentProcess(),GR_GDIOBJECTS),afterUser=GetGuiResources(GetCurrentProcess(),GR_USEROBJECTS);assert(afterGdi<=beforeGdi+2&&afterUser<=beforeUser+2);std::printf("PASS 100 wizard open/black/cancel cycles: GDI %lu -> %lu, USER %lu -> %lu\n",beforeGdi,afterGdi,beforeUser,afterUser);
+ // Exercise the production save path used when a depth drag ends.
+ iniPath=std::filesystem::absolute(dir/L"Settings-save-regression.ini").wstring();
+ WritePrivateProfileStringW(L"Settings",L"Filter",L"5",iniPath.c_str());WritePrivateProfileStringW(L"Settings",L"Height",L"1080",iniPath.c_str());
+ for(int depth=2;depth<=30;depth++){
+  {std::lock_guard guard(g.lock);g.config.depth=depth;g.config.brightness=73;g.config.mode=1;g.config.calibrated=true;g.config.corners={4,14,32,42};}
+  save();
+  assert(GetPrivateProfileIntW(L"Settings",L"Depth",999,iniPath.c_str())==depth);
+  assert(GetPrivateProfileIntW(L"Settings",L"Brightness",999,iniPath.c_str())==73);
+  assert(GetPrivateProfileIntW(L"Settings",L"Mode",999,iniPath.c_str())==1);
+  assert(GetPrivateProfileIntW(L"Settings",L"CornerBL",999,iniPath.c_str())==42);
+  assert(GetPrivateProfileIntW(L"Settings",L"Filter",999,iniPath.c_str())==999);
+  assert(GetPrivateProfileIntW(L"Settings",L"Height",999,iniPath.c_str())==999);
+ }
+ std::puts("PASS production settings save/reload at all 29 depth positions, retained calibration, removed obsolete keys");
  DestroyWindow(parent);assert(!g.identifying);std::puts("PASS visual wizard: live draft, A/B, cancel rollback, parent restoration, atomic save and profile reload (isolated test directory)");std::puts("PASS offline calibration: four-corner recording, save gating, front/rear mirror, no production config writes or USB access");
 }
+
 
 
 
