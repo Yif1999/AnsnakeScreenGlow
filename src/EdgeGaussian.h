@@ -36,11 +36,14 @@ groupshared float4 sums[256];
 float3 linearize(float3 v){if(hdrScale>0)return max(v,0)/hdrScale;v=max(v,0);return lerp(v/12.92,pow((v+.055)/1.055,2.4),step(.04045,v));}
 [numthreads(256,1,1)]void main(uint3 group:SV_GroupID,uint lane:SV_GroupIndex){
  Region r=regions[group.x];uint rw=r.box.z-r.box.x,count=rw*(r.box.w-r.box.y);float4 sum=0;
- for(uint i=lane;i<count;i+=256){uint2 p=r.box.xy+uint2(i%rw,i/rw);float2 delta=abs(float2(p)+.5-r.center);float w;
-  if(r.kind==2){if(dot(delta,delta)>radius*radius)continue;w=weights[(uint)delta.x]*weights[(uint)delta.y];}
-  else {float d=r.kind==0?delta.x:delta.y;if(d>radius)continue;w=weights[(uint)d];}
+ for(uint i=lane;i<count;i+=256){uint2 p=r.box.xy+uint2(i%rw,i/rw);float2 delta=abs(float2(p)+.5-r.center);float w,q;
+  if(r.kind==2){q=dot(delta,delta)/(radius*radius);if(q>=1)continue;w=weights[(uint)delta.x]*weights[(uint)delta.y];}
+  else {float d=r.kind==0?delta.x:delta.y;q=d*d/(radius*radius);if(q>=1)continue;w=weights[(uint)d];}
+  // Compact Gaussian taper: value and slope both reach zero at the boundary.
+  float taper=1-q;w*=taper*taper;
   sum+=float4(linearize(source.Load(int3(p,0)).rgb)*w,w);
  }
  sums[lane]=sum;GroupMemoryBarrierWithGroupSync();for(uint step=128;step>0;step/=2){if(lane<step)sums[lane]+=sums[lane+step];GroupMemoryBarrierWithGroupSync();}
  if(lane==0){float3 c=sums[0].rgb/max(sums[0].a,1e-10);c/=max(1,max(c.r,max(c.g,c.b)));colors[group.x]=float4(c,1);}
 })";
+

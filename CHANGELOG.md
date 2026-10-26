@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Taper Gaussian weights smoothly to zero with zero boundary slope for both edge and radial corner regions.
+- Preserve full-pixel sampling and normalized output without extra textures.
+- Validate monotonicity, boundary continuity and GPU/CPU agreement.
+
 ## 1.0.1
 
 - Fix an out-of-bounds settings write that crashed when saving depth or other controls.
@@ -15,4 +21,5 @@
 - Front-view four-corner layout calibration and reversible visual color wizard.
 - HDR/SDR handling, 60 Hz target, latest-frame processing, tray controls.
 - Explicit current-user sign-in startup registration and removal.
+
 
